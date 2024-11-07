@@ -4,6 +4,7 @@ from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, AllowAny, SAFE_METHODS
 from punto_de_venta_rest_app.models import CategoriaProducto, Producto
 from punto_de_venta_rest_app.serializers import CategoriaProductoSerializer, ProductoSerializer
 
@@ -42,11 +43,18 @@ class ProductoViewSet(viewsets.ModelViewSet):
     search_fields = ("nombre_producto", "descripcion")
     ordering_fields = ("nombre_producto", "precio_venta", "cantidad_inventario")
 
+    def get_permissions(self):
+        """
+        Permite acceso de solo lectura sin autenticación, mientras que las operaciones de escritura requieren autenticación.
+        """
+        if self.request.method in SAFE_METHODS:
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     
     def destroy(self, request, *args, **kwargs):
         """
-        Esto es para eliminar la instancia que deseamos eliminar, como logica se uso un eliminado pasivo para 
+        Permite eliminar la instancia que deseamos eliminar, como logica se uso un eliminado pasivo para 
         que el registro exista en bases de datos, pero que no pueda ser visto por el usuario
         - Resive como parametro la instancia o id que se quiere eliminar.
         - Retorna solamente un estado de `204` para identificar que no tiene contenido pero quie se realizo la acción de manera

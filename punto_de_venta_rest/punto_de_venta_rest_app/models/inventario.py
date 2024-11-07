@@ -3,7 +3,6 @@ from punto_de_venta_rest_app.models import Producto, Pedido, OrdenCompra
 # Create your models here.
 
 class MovimientoInventario(models.Model):
-    
     TIPO_MOVIMIENTO = [
         ('entrada', 'Entrada'),
         ('salida', 'Salida'),
@@ -19,33 +18,20 @@ class MovimientoInventario(models.Model):
     def __str__(self):
         return f'{self.tipo_movimiento} de {self.cantidad} - {self.producto.nombre_producto}'
 
+    @staticmethod
     def registrar_pedido(pedido):
-        for item in pedido.pedidoproducto_set.all():
-            MovimientoInventario.objects.create(
-                tipo_movimiento='salida',
-                producto=item.producto,
-                cantidad=item.cantidad,
-                referencia_pedido=pedido
-            )
-            item.producto.cantidad_inventario -= item.cantidad
-            item.producto.save()
-            
-    def registrar_orden_compra(orden):
         """
-        Registra los productos de una Orden de Compra en el inventario y actualiza la cantidad de inventario.
-
-        Parameters:
-        orden (OrdenCompra): La Orden de Compra a registrar en el inventario.
-
-        Returns:
-        None
+        Registra un movimiento de inventario para cada producto en el pedido cuando el pedido se completa.
         """
-        for item in orden.ordencompraproducto_set.all():
-            MovimientoInventario.objects.create(
-                tipo_movimiento='entrada',
-                producto=item.producto,
-                cantidad=item.cantidad,
-                referencia_orden_compra=orden
-            )
-            item.producto.cantidad_inventario += item.cantidad
-            item.producto.save()
+        if pedido.estado_pedido == 'completado':
+            for item in pedido.pedidoproducto_set.all():
+                # Registrar el movimiento de inventario
+                MovimientoInventario.objects.create(
+                    tipo_movimiento='salida',
+                    producto=item.producto,
+                    cantidad=item.cantidad,
+                    referencia_pedido=pedido
+                )
+                # Ajustar el inventario del producto
+                item.producto.cantidad_inventario -= item.cantidad
+                item.producto.save()

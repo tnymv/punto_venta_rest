@@ -16,15 +16,15 @@ class Pedido(models.Model):
     fecha_pedido = models.DateTimeField(auto_now_add=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     estado_pedido = models.CharField(
-    max_length=50, 
-    choices=[
-        ('pendiente', 'Pendiente'),
-        ('completado', 'Completado'),
-        ('cancelado', 'Cancelado')
-    ],
-    default='pendiente'
-)
-    precio_total = models.DecimalField(max_digits=10, decimal_places=2)
+        max_length=50, 
+        choices=[
+            ('pendiente', 'Pendiente'),
+            ('completado', 'Completado'),
+            ('cancelado', 'Cancelado')
+        ],
+        default='pendiente'
+    )
+    precio_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
         return f'Pedido {self.numero_pedido}'
@@ -32,6 +32,23 @@ class Pedido(models.Model):
     def calcular_precio_total(self):
         self.precio_total = sum(item.precio * item.cantidad for item in self.pedidoproducto_set.all())
         self.save()
+
+    def completar_pedido(self):
+        from punto_de_venta_rest_app.models import MovimientoInventario
+        """
+        Completa el pedido, ajustando el inventario y registrando movimientos de inventario.
+        """
+        self.estado_pedido = 'completado'
+        self.save()
+        MovimientoInventario.registrar_pedido(self)
+
+    def cancelar_pedido(self):
+        """
+        Cancela el pedido sin afectar el inventario.
+        """
+        self.estado_pedido = 'cancelado'
+        self.save()
+
 
 
 
